@@ -9,17 +9,45 @@
 // @grant        GM_log
 // ==/UserScript==
 
+class Handler {
+    constructor() {
+        this.domain = '';
+        this.shortUrl = '';
+        this.shareButton = null;
+        this.copyButton = null;
+        this.shareUrlInput = null;
+        this.originalCopyFunction = null;
+    }
+
+    // Check if current domain is supported
+    matchDomain(hostname) {
+        return hostname.includes(this.domain);
+    }
+
+    // Extract video ID and timestamp from URL
+    extractVideoInfo(url) {
+        throw new Error('Not implemented');
+    }
+
+    // Generate cleaned URL
+    generateCleanUrl(originalUrl) {
+        return this.shortUrl + this.extractVideoInfo(originalUrl);
+    }
+
+    initialize() {
+        throw new Error('Not implemented');
+    }
+}
+
 (function() {
     'use strict';
 
     // YouTube link handler class
-    class YouTubeHandler {
+    class YouTubeHandler extends Handler {
         constructor() {
+            super();
             this.domain = 'youtube.com';
-            this.shareButton = null;
-            this.copyButton = null;
-            this.shareUrlInput = null;
-            this.originalCopyFunction = null;
+            this.shortUrl = 'https://youtu.be/';
         }
 
         // Extract video ID and timestamp from URL
@@ -36,11 +64,6 @@
             return videoId + time;
         }
 
-        // Generate cleaned URL
-        generateCleanUrl(originalUrl) {
-            return 'https://youtu.be/' + this.extractVideoInfo(originalUrl);
-        }
-
         // Get the ID of the share button
         getShareButtonId() {
             return 'top-level-buttons-computed';
@@ -55,26 +78,30 @@
             return 'share-url';
         }
 
-        // Recursively initialize to find the share button
         initialize() {
+            this.findShareButton();
+        }
+
+        // Recursively initialize to find the share button
+        findShareButton() {
             if (this.shareButton) return;
             let shareButton = document.getElementById(this.getShareButtonId());
             if (!shareButton) {
-                setTimeout(this.initialize.bind(this), 500);
+                setTimeout(this.findShareButton.bind(this), 500);
                 return;
             } else {
                 console.log('Share button:', shareButton);
                 this.shareButton = shareButton;
-                this.shareButton.addEventListener('click', this.handleShareButtonClick.bind(this));
+                this.shareButton.addEventListener('click', this.findCopyButton.bind(this), { once: true });
             }
         }
 
         // When the share button is clicked, recursively find the copy button and override the copy function
-        handleShareButtonClick() {
+        findCopyButton() {
             if (this.copyButton) return;
             let copyButton = document.getElementById(this.getCopyButtonId());
             if (!copyButton) {
-                setTimeout(this.handleShareButtonClick.bind(this), 500);
+                setTimeout(this.findCopyButton.bind(this), 500);
                 return;
             } else {
                 this.copyButton = copyButton;
@@ -84,13 +111,13 @@
     }
 
     // Bilibili link handler class
-    class BilibiliHandler {
+    class BilibiliHandler extends Handler {
         constructor() {
+            super();
             this.domain = 'bilibili.com';
-            this.shareButton = null;
-            this.copyButton = null;
-            this.shareUrlInput = null;
-            this.originalCopyFunction = null;
+            // this.shortUrl = 'https://b23.tv/'; // Short URL not working for timestamp
+            this.shortUrl = 'https://www.bilibili.com/video/';
+            this.innerShareButton = null;
         }
 
         // Extract video ID and timestamp from URL
@@ -104,12 +131,8 @@
             // Extract time parameter, add ?t= prefix if exists
             const time = timeMatch ? '?t=' + timeMatch[1] : '';
             // Return combined result
-            return videoId + time;
-        }
-
-        // Generate cleaned URL
-        generateCleanUrl(originalUrl) {
-            return 'https://b23.tv/' + this.extractVideoInfo(originalUrl);
+            // return videoId + time;
+            return videoId + '/' + time;
         }
 
         // Get the ID of the share button
@@ -117,22 +140,48 @@
             return 'share-btn-outer';
         }
 
+        getInnerShareButtonId() {
+            return 'share-btn-inner';
+        }
+
         initialize() {
+            this.findShareButton();
+        }
+
+        // find the share button
+        findShareButton() {
             if (this.shareButton) return;
             let shareButton = document.getElementById(this.getShareButtonId());
             if (!shareButton) {
                 setTimeout(this.initialize.bind(this), 500);
                 return;
             } else {
-                console.log('Share button:', shareButton);
                 this.shareButton = shareButton;
+                // When the share button is hovered, find the inner share button
+                this.shareButton.addEventListener('mouseenter', this.findInnerShareButton.bind(this), { once: true });
+                // When the share button is clicked, handle the clipboard content
                 this.shareButton.addEventListener('click', this.handleShareButtonClick.bind(this));
             }
         }
 
-        // When the share button is clicked, monitor clipboard for Bilibili links
+        findInnerShareButton() {
+            if (this.innerShareButton) return;
+            let innerShareButton = document.getElementById(this.getInnerShareButtonId());
+            if (!innerShareButton) {
+                setTimeout(this.findInnerShareButton.bind(this), 500);
+                return;
+            } else {
+                this.innerShareButton = innerShareButton;
+                // When the inner share button is clicked, handle the clipboard content
+                this.innerShareButton.addEventListener('click', this.handleInnerShareButtonClick.bind(this));
+            }
+        }
+        
         handleShareButtonClick() {
-            console.log('Share button clicked');
+            processClipboardContent(this);
+        }
+
+        handleInnerShareButtonClick() {
             processClipboardContent(this);
         }
     }
