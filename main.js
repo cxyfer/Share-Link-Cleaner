@@ -2,7 +2,7 @@
 // @name         Share Link Cleaner
 // @namespace    https://github.com/cxyfer/Share-Link-Cleaner
 // @version      1.0.0
-// @description  A tool to remove tracking parameters from share links, now supports YouTube.
+// @description  A tool to remove tracking parameters from share links, now supports YouTube and Bilibili.
 // @author       cxyfer
 // @match        https://www.youtube.com/*
 // @match        https://www.bilibili.com/*
