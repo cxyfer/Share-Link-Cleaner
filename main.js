@@ -90,7 +90,6 @@ class Handler {
                 setTimeout(this.findShareButton.bind(this), 500);
                 return;
             } else {
-                console.log('Share button:', shareButton);
                 this.shareButton = shareButton;
                 this.shareButton.addEventListener('click', this.findCopyButton.bind(this), { once: true });
             }
@@ -196,7 +195,6 @@ class Handler {
     // Get handler for current domain
     function getCurrentHandler() {
         const hostname = window.location.hostname;
-        console.log('Current hostname:', hostname);
         for (const handler of handlers) {
             if (hostname.includes(handler.domain)) {
                 return handler;
@@ -271,7 +269,7 @@ class Handler {
 
     // Get the current domain handler
     const handler = getCurrentHandler();
-    console.log('Handler found:', handler);
+    console.log('Handler found:', handler.domain);
         
     // If no handler found, do not proceed
     if (!handler) {
